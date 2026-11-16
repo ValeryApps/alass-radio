@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 import { createClient } from "@/lib/supabase/server";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
@@ -57,7 +57,44 @@ export default async function NewsArticlePage({ params }: NewsPageProps) {
     categoryName = category?.name || "News";
   }
 
-  const safeContent = DOMPurify.sanitize(article.content || "");
+  const safeContent = sanitizeHtml(article.content || "", {
+    allowedTags: [
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "p",
+      "br",
+      "strong",
+      "b",
+      "em",
+      "i",
+      "u",
+      "s",
+      "ul",
+      "ol",
+      "li",
+      "blockquote",
+      "a",
+      "img",
+      "figure",
+      "figcaption",
+      "div",
+      "span",
+    ],
+    allowedAttributes: {
+      a: ["href", "name", "target", "rel"],
+      img: ["src", "alt", "title", "width", "height"],
+    },
+    allowedSchemes: ["http", "https", "mailto"],
+    transformTags: {
+      a: sanitizeHtml.simpleTransform("a", {
+        rel: "noopener noreferrer",
+      }),
+    },
+  });
 
   const formattedDate = article.published_at
     ? new Date(article.published_at).toLocaleDateString("en-LR", {
